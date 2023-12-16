@@ -7,6 +7,7 @@ import 'antd/dist/reset.css';
 import { v4 as uuid } from 'uuid'
 import { listNotes } from './graphql/queries'; // Queries from GraphQL Queries (list)
 import { createNote as CreateNote } from './graphql/mutations'; // Queries from GraphQL Queries (create)
+import { deleteNote as DeleteNote } from './graphql/mutations'; // Queries from GraphQL Queries (Delete)
 
 const CLIENT_ID = uuid();
 
@@ -43,6 +44,23 @@ const reducer = (state, action) => {
 const App = () => {
 
   const [state, dispatch] = useReducer(reducer, initialState);
+
+  const deleteNote = async({ id }) => {
+    const index = state.notes.findIndex(n => n.id === id);
+    const notes = [
+      ...state.notes.slice(0, index), // maybe change to a filter?
+      ...state.notes.slice(index + 1)];
+    dispatch({ type: 'SET_NOTES', notes });
+    try {
+      await API.graphql({
+        query: DeleteNote,
+        variables: { input: { id } }
+      })
+      console.log('successfully deleted note!');
+      } catch (err) {
+        console.log("error: ", err);
+    }
+  };
 
   const createNote = async() => {
     const { form } = state
@@ -93,7 +111,13 @@ const App = () => {
 
   const renderItem = (item) => {
     return (
-      <List.Item style={styles.item}>
+      <List.Item
+        style={styles.item}
+        actions={[
+          <p style={styles.p} onClick={() => deleteNote(item)}>Delete</p>
+        ]}
+      >
+
       <List.Item.Meta
         title={item.name}
         description={item.description}
