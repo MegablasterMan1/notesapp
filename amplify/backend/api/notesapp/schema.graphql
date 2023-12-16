@@ -8,4 +8,5 @@ type Note @model {
   name: String!
   description: String
   completed: Boolean
+  warned: Boolean
 }

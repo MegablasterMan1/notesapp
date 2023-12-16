@@ -26,6 +26,8 @@ const reducer = (state, action) => {
       return { ...state, notes: action.notes, loading: false};
     case 'ADD_NOTE':
       return { ...state, notes: [action.note, ...state.notes]};
+    case 'ADD_EXCLAMATION':
+      return { ...state, notes: [action.note, ...state.notes]};
     case 'RESET_FORM':
       return { ...state, form: initialState.form };
     case 'SET_INPUT':
@@ -125,31 +127,31 @@ const App = () => {
   // Real-Time Data (GraphQL Subscriptions)
   useEffect(() => {
     fetchNotes();
-      const addsubscription = API.graphql({
-        query: onCreateNote
-      })
-        .subscribe({
-          next: noteData => {
-            const note = noteData.value.data.onCreateNote
-            if (CLIENT_ID === note.clientId) return
-            dispatch({ type: 'ADD_NOTE', note })
-          }
-        });
-        // //Delete Notes
-        // const deleteSubscription = API.graphql({
-        //   query: onDeleteNote
-        // })
-        //   .subscribe({
-        //     next: noteData => {
-        //       const removed_note = noteData.value.data.onDeleteNote.id;
-        //       dispatch({ type: 'DELETE_NOTE', removed_note });
-        //     }
-        //   });
-        return () => {
-          addsubscription.unsubscribe();
-          // deleteSubscription.unsubscribe();
-        };
-    }, []); //Pull up notes when the display loads up.
+  
+    const addSubscription = API.graphql({
+      query: onCreateNote,
+    }).subscribe({
+      next: noteData => {
+        const note = noteData.value.data.onCreateNote;
+        if (CLIENT_ID === note.clientId) return;
+        dispatch({ type: 'ADD_NOTE', note });
+      },
+    });
+  
+    const deleteSubscription = API.graphql({
+      query: onDeleteNote,
+    }).subscribe({
+      next: noteData => {
+        const removed_note = noteData.value.data.onDeleteNote.id;
+        dispatch({ type: 'DELETE_NOTE', removed_note });
+      },
+    });
+  
+    return () => {
+      addSubscription.unsubscribe();
+      deleteSubscription.unsubscribe();
+    };
+  }, []); //Pull up notes when the display loads up.
 
   const styles = { // Custom Styles
     container: {padding: 20}
@@ -158,32 +160,47 @@ const App = () => {
     ,p: { color: '#1890ff' }
   };
 
-  const checkstyles = { // Custom Styles
-    container: {padding: 30}
-    ,input: {marginTop: 10}
+  const warningStyles = { // Custom Styles
+    p: { color: 'Red' }
   };
 
 
   const renderItem = (item) => {
+    const exclamationFunction = async () => {
+      try {
+        await API.graphql({
+          query: UpdateNote,
+          variables: { input: { id: item.id, completed: true } },
+        });
+        console.log('Exclamation clicked for item:', item.clientId);
+      } catch (err) {console.log('error:', err)}
+    };
+  
     return (
       <List.Item
         style={styles.item}
         actions={[
           <p style={styles.p} onClick={() => deleteNote(item)}>Delete</p>,
           <p style={styles.p} onClick={() => updateNote(item)}>
-            {item.completed ? //Changed Completed to a Checkbox
-              <input type="checkbox" checked={checked}/>
+            {item.completed ?
+              <input type="checkbox" checked={checked} />
               :
-              <input type="checkbox"/>
+              <input type="checkbox" />
+            }
+          </p>,
+          <p style={styles.p} onClick={exclamationFunction}>
+            {item.completed ?
+              <h3 style={warningStyles.p}>!!!</h3>
+              :
+              <h5>...</h5>
             }
           </p>
         ]}
       >
-
-      <List.Item.Meta
-        title={item.name}
-        description={item.description}
-      />
+        <List.Item.Meta
+          title={item.name}
+          description={item.description}
+        />
       </List.Item>
     );
   };

@@ -12,6 +12,7 @@ export const createNote = /* GraphQL */ `
       name
       description
       completed
+      warned
       createdAt
       updatedAt
       __typename
@@ -29,6 +30,7 @@ export const updateNote = /* GraphQL */ `
       name
       description
       completed
+      warned
       createdAt
       updatedAt
       __typename
@@ -46,6 +48,7 @@ export const deleteNote = /* GraphQL */ `
       name
       description
       completed
+      warned
       createdAt
       updatedAt
       __typename
