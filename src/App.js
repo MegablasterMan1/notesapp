@@ -6,6 +6,7 @@ import { List, Input, Button, Checkbox } from 'antd'; // CSS For styles
 import 'antd/dist/reset.css';
 import { v4 as uuid } from 'uuid'
 import { listNotes } from './graphql/queries'; // Queries from GraphQL Queries (list)
+import { onCreateNote, onDeleteNote } from './graphql/subscriptions' // Real Time Subscriptions
 import { createNote as CreateNote } from './graphql/mutations'; // Queries from GraphQL Queries (create)
 import { deleteNote as DeleteNote } from './graphql/mutations'; // Queries from GraphQL Queries (Delete)
 import { updateNote as UpdateNote } from './graphql/mutations'; // Queries from GraphQL Queries (Update)
@@ -46,6 +47,7 @@ const App = () => {
   const [checked, setChecked] = React.useState(false);
   const [state, dispatch] = useReducer(reducer, initialState);
 
+  // Updating Notes (GraphQL Mutation)
   const updateNote= async(note) => {
     const index = state.notes.findIndex(n => n.id === note.id);
     const notes = [...state.notes]
@@ -62,6 +64,7 @@ const App = () => {
     }
   };
 
+  // Deleting Notes (GraphQL Mutation)
   const deleteNote = async({ id }) => {
     const index = state.notes.findIndex(n => n.id === id);
     const notes = [
@@ -79,6 +82,7 @@ const App = () => {
     }
   };
 
+  // Creating Notes (GraphQL Mutation)
   const createNote = async() => {
     const { form } = state
 
@@ -101,6 +105,7 @@ const App = () => {
     }
   };
 
+  // Listing Notes (GraphQL Query)
   const fetchNotes = async() => {
     try {
       const notesData = await API.graphql({
@@ -117,7 +122,34 @@ const App = () => {
     dispatch({ type: 'SET_INPUT', name: e.target.name, value: e.target.value })
   };
 
-  useEffect(() => {fetchNotes()}, []); //Pull up notes when the display loads up.
+  // Real-Time Data (GraphQL Subscriptions)
+  useEffect(() => {
+    fetchNotes();
+      const addsubscription = API.graphql({
+        query: onCreateNote
+      })
+        .subscribe({
+          next: noteData => {
+            const note = noteData.value.data.onCreateNote
+            if (CLIENT_ID === note.clientId) return
+            dispatch({ type: 'ADD_NOTE', note })
+          }
+        });
+        // //Delete Notes
+        // const deleteSubscription = API.graphql({
+        //   query: onDeleteNote
+        // })
+        //   .subscribe({
+        //     next: noteData => {
+        //       const removed_note = noteData.value.data.onDeleteNote.id;
+        //       dispatch({ type: 'DELETE_NOTE', removed_note });
+        //     }
+        //   });
+        return () => {
+          addsubscription.unsubscribe();
+          // deleteSubscription.unsubscribe();
+        };
+    }, []); //Pull up notes when the display loads up.
 
   const styles = { // Custom Styles
     container: {padding: 20}
