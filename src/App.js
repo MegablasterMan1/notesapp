@@ -2,9 +2,11 @@ import logo from './logo.svg';
 import './App.css';
 import React, {useEffect, useReducer} from 'react'; // A default import
 import { API } from 'aws-amplify'; // Gives access to use to use the GraphQL
-import { List } from 'antd'; // CSS For styles
+import { List, Input, Button } from 'antd'; // CSS For styles
 import 'antd/dist/reset.css';
-import { listNotes } from './graphql/queries'; // Queries from GraphQL Queries
+import { v4 as uuid } from 'uuid'
+import { listNotes } from './graphql/queries'; // Queries from GraphQL Queries (list)
+import { createNotes as CreateNote } from './graphql/mutations'; // Queries from GraphQL Queries (create)
 
 const initialState = {
   notes: [],
