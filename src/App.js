@@ -58,9 +58,33 @@ const App = () => {
     try {
       await API.graphql({
         query: UpdateNote,
-        variables: { input: { id: note.id, completed: notes[index].completed } }
+        variables: { input: { id: note.id, completed: notes[index].completed, warned: notes[index].warned } }
       })
       console.log('note successfully updated!');
+    } catch (err) {
+      console.log('error: ', err);
+    }
+  };
+
+  // Real-Time Change (GraphQL Subscriptions)
+  const exclamNote= async(note) => {
+    const index = state.notes.findIndex(n => n.id === note.id);
+    const notes = [...state.notes];
+
+    const checkValue = (n) => {
+      const x = n.name.replace(/!+$/, '');
+      return n.warned ? `${x}!!!` : x;
+    };
+
+    notes[index].warned = !note.warned;
+    notes[index].name = checkValue(note);
+    dispatch({ type: 'SET_NOTES', notes})
+    try {
+      await API.graphql({
+        query: UpdateNote,
+        variables: { input: { id: note.id, warned: notes[index].warned }}
+      })
+      console.log('exlamation note updated!', note.warned);
     } catch (err) {
       console.log('error: ', err);
     }
@@ -163,38 +187,33 @@ const App = () => {
   const warningStyles = { // Custom Styles
     p: { color: 'Red' }
   };
-
+  const happyStyles = { // Custom Styles
+    p: { color: 'Green' }
+  };
+  const blandStyles = { // Custom Styles
+    p: { color: 'Grey' }
+  };
 
   const renderItem = (item) => {
-    const exclamationFunction = async () => {
-      try {
-        await API.graphql({
-          query: UpdateNote,
-          variables: { input: { id: item.id, completed: true } },
-        });
-        console.log('Exclamation clicked for item:', item.clientId);
-      } catch (err) {console.log('error:', err)}
-    };
-  
     return (
       <List.Item
         style={styles.item}
         actions={[
-          <p style={styles.p} onClick={() => deleteNote(item)}>Delete</p>,
-          <p style={styles.p} onClick={() => updateNote(item)}>
+          <div style={styles.p} onClick={() => deleteNote(item)}>Delete</div>,
+          <div style={styles.p} onClick={() => updateNote(item)}>
             {item.completed ?
-              <input type="checkbox" checked={checked} />
+              <p style={happyStyles.p}>Done</p>
               :
-              <input type="checkbox" />
+              <p style={blandStyles.p}>Not Done</p>
             }
-          </p>,
-          <p style={styles.p} onClick={exclamationFunction}>
-            {item.completed ?
-              <h3 style={warningStyles.p}>!!!</h3>
+          </div>,
+          <div style={styles.p} onClick={() => exclamNote(item)}>
+            {item.warned ?
+              <p style={warningStyles.p}>!!!</p>
               :
-              <h5>...</h5>
+              <p style={blandStyles.p}>...</p>
             }
-          </p>
+          </div>
         ]}
       >
         <List.Item.Meta
