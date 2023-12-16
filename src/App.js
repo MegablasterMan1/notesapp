@@ -6,7 +6,9 @@ import { List, Input, Button } from 'antd'; // CSS For styles
 import 'antd/dist/reset.css';
 import { v4 as uuid } from 'uuid'
 import { listNotes } from './graphql/queries'; // Queries from GraphQL Queries (list)
-import { createNotes as CreateNote } from './graphql/mutations'; // Queries from GraphQL Queries (create)
+import { createNote as CreateNote } from './graphql/mutations'; // Queries from GraphQL Queries (create)
+
+const CLIENT_ID = uuid();
 
 const initialState = {
   notes: [],
@@ -18,11 +20,13 @@ const initialState = {
 const reducer = (state, action) => {
   switch(action.type) {
     case 'SET_NOTES': //IF NO ERROR
-      return {
-        ...state,
-        notes: action.notes,
-        loading: false
-      };
+      return { ...state, notes: action.notes, loading: false};
+    case 'ADD_NOTE':
+      return { ...state, notes: [action.note, ...state.notes]};
+    case 'RESET_FORM':
+      return { ...state, form: initialState.form };
+    case 'SET_INPUT':
+      return { ...state, form: { ...state.form, [action.name]: action.value } };
     case 'ERROR': //IF ERROR
       return {
         ...state,
@@ -40,6 +44,28 @@ const App = () => {
 
   const [state, dispatch] = useReducer(reducer, initialState);
 
+  const createNote = async() => {
+    const { form } = state
+
+    if (!form.name || !form.description) {
+      return alert('please enter a name and description');
+    }
+
+    const note = { ...form, clientId: CLIENT_ID, completed: false, id: uuid() };
+    dispatch({ type: 'ADD_NOTE', note });
+    dispatch({ type: 'RESET_FORM' });
+
+    try {
+      await API.graphql({
+      query: CreateNote,
+      variables: { input: note }
+      });
+      console.log('successfully created note!');
+    } catch (err) {
+      console.log("error: ", err);
+    }
+  };
+
   const fetchNotes = async() => {
     try {
       const notesData = await API.graphql({
@@ -50,6 +76,10 @@ const App = () => {
       console.log('error: ', err);
       dispatch({ type: 'ERROR' });
     }
+  };
+
+  const onChange = (e) => {
+    dispatch({ type: 'SET_INPUT', name: e.target.name, value: e.target.value })
   };
 
   useEffect(() => {fetchNotes()}, []); //Pull up notes when the display loads up.
@@ -73,17 +103,36 @@ const App = () => {
   };
   
   return (
-    <>
       <div style={styles.container}>
+
+        <Input
+          onChange={onChange}
+          value={state.form.name}
+          placeholder="Note Name"
+          name='name'
+          style={styles.input}
+        />
+
+        <Input
+          onChange={onChange}
+          value={state.form.description}
+          placeholder="Note description"
+          name='description'
+          style={styles.input}
+        />
+
+        <Button
+          onClick={createNote}
+          type="primary"
+        >Create Note</Button>
 
         <List
           loading={state.loading}
           dataSource={state.notes}
           renderItem={renderItem}
-        />
 
+        />
       </div>
-    </>
   );
 }
 
