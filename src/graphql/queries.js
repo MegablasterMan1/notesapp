@@ -9,6 +9,7 @@ export const getNote = /* GraphQL */ `
       name
       description
       completed
+      warned
       createdAt
       updatedAt
       __typename
@@ -28,6 +29,7 @@ export const listNotes = /* GraphQL */ `
         name
         description
         completed
+        warned
         createdAt
         updatedAt
         __typename
