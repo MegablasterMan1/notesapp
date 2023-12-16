@@ -3,7 +3,7 @@ import './App.css';
 import React, {useEffect, useReducer} from 'react'; // A default import
 import { API } from 'aws-amplify'; // Gives access to use to use the GraphQL
 import { List } from 'antd'; // CSS For styles
-import 'antd/dist/antd.css';
+import 'antd/dist/reset.css';
 import { listNotes } from './graphql/queries'; // Queries from GraphQL Queries
 
 const initialState = {
